@@ -40,6 +40,7 @@ namespace Scriptovich {
                 } else {
                     Log.Write(2, "Waiting for " + ServerType + " server in " + versionSCD + "...");
                     Log.Write(3, "[Error Level " + serverStatus + "]");
+                    Console.WriteLine();
                     Console.WriteLine("Waiting for " + ServerType + " server in " + versionSCD + "...");
                     Console.WriteLine("[Error Level " + serverStatus + "]");
                     Thread.Sleep(30000);
