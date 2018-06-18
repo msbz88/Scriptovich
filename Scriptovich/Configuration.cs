@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.Xml;
 
 namespace Scriptovich {
@@ -12,7 +8,7 @@ namespace Scriptovich {
         public string BatchQueue { get; set; }
         public string BatchDate { get; set; }
         public string BatchServer { get; set; }
-        public Dictionary<string, string> ServersToWait { get; set; }
+        public Dictionary<string, string> ServersToWait = new Dictionary<string, string>();
         private string PathConfigsFile { get; set; }
 
         public Configuration(string pathConfigs) {
