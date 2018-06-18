@@ -73,16 +73,12 @@ namespace Scriptovich {
             }
             //---------------------------------------------------------------------------------------------------------------------------------------------------------
             List<Server> serversToWait = new List<Server>();
-            Server serverMQ1 = new Server("DA_MQ_1", "MQ", Log);
-            //Server serverMQ2 = new Server("TA_TRIGGER", "MQ", textFile);
-            //Server serverMQ3 = new Server("CNC", "MQ", textFile);
-            Server serverSTP = new Server("FA_STP_1", "STP", Log);
-            Server serverCALC = new Server("SO_CALC_1", "CALC", Log);
-            serversToWait.Add(serverMQ1);
-            //serversToWait.Add(serverMQ2);
-            //serversToWait.Add(serverMQ3);
-            serversToWait.Add(serverSTP);
-            serversToWait.Add(serverCALC);
+            if (!errors) {           
+                foreach (var server in Configs.ServersToWait) {
+                    Server srv = new Server(server.Key, server.Value, Log);
+                    serversToWait.Add(srv);
+                }
+            }
             //---------------------------------------------------------------------------------------------------------------------------------------------------------
 
             if (batchJobGrps.Count > 0 && !errors) {

@@ -12,6 +12,7 @@ namespace Scriptovich {
         public string BatchQueue { get; set; }
         public string BatchDate { get; set; }
         public string BatchServer { get; set; }
+        public Dictionary<string, string> ServersToWait { get; set; }
         private string PathConfigsFile { get; set; }
 
         public Configuration(string pathConfigs) {
@@ -20,13 +21,25 @@ namespace Scriptovich {
             PathTestSCD = ReadConfigsFile("PathTestSCD");
             BatchQueue = ReadConfigsFile("BatchQueue");
             BatchDate = ReadConfigsFile("BatchDate");
-            BatchServer = ReadConfigsFile("BatchServer");      
+            BatchServer = ReadConfigsFile("BatchServer");
+            ServersToWait = ReadConfigsFile();
         }
 
         private string ReadConfigsFile(string param) {
             XmlDocument doc = new XmlDocument();
             doc.Load(PathConfigsFile);
             return doc.GetElementsByTagName(param)[0].InnerXml;
+        }
+
+        private Dictionary<string, string> ReadConfigsFile() {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(PathConfigsFile);
+            Dictionary<string, string> serversToWait = new Dictionary<string, string>();
+            XmlNodeList xnList = doc.SelectNodes("/configuration/ScriptovichSettings/ServersToWait/server");
+            foreach (XmlNode xn in xnList) {
+                serversToWait.Add(xn.InnerText, xn.Attributes["type"].Value);
+            }           
+            return serversToWait;
         }
     }
 }
