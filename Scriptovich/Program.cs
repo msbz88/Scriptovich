@@ -8,6 +8,8 @@ namespace Scriptovich {
     class Program {
         static Configuration Configs { get; set; }
         static Log Log { get; set; }
+        static string CurrentBatchJobGrp { get; set; }
+        static int CurrentJobPosition { get; set; }
 
         public static List<string> ReadFileWithBatchJobGrps(string pathFile) {
             return File.ReadAllLines(pathFile).ToList();
@@ -32,6 +34,11 @@ namespace Scriptovich {
             }
         }
 
+        static void SavePreviouslyEndedBJGInfo(object sender, ConsoleCancelEventArgs e) {
+            string cacheFile = Directory.GetCurrentDirectory() + @"\Scriptovich_cache.txt";
+            File.WriteAllText(cacheFile, CurrentBatchJobGrp + ";" + CurrentJobPosition);
+        }
+
         static void VerifyServerListForWaiting(List<Server> serversToWait) {
             if (!serversToWait.Any()) {
                 Console.WriteLine("In cofig file no servers found for waiting");
@@ -53,6 +60,7 @@ namespace Scriptovich {
         }
 
         static void Main(string[] args) {
+            Console.CancelKeyPress += SavePreviouslyEndedBJGInfo;
             string logFile = "";
             try {
                 string logDir = Directory.GetCurrentDirectory() + @"\Log";
@@ -95,8 +103,9 @@ namespace Scriptovich {
                     Server srv = new Server(server.Key, server.Value, Log);
                     serversToWait.Add(srv);
                 }
+                VerifyServerListForWaiting(serversToWait);
             }
-            VerifyServerListForWaiting(serversToWait);
+            
             //---------------------------------------------------------------------------------------------------------------------------------------------------------
 
             if (batchJobGrps.Count > 0 && !errors) {
@@ -112,7 +121,9 @@ namespace Scriptovich {
                 int allJobs = batchJobGrps.Count;
 
                 foreach (BatchJobGrp batchJobGrp in batchJobGrps) {
+                    CurrentBatchJobGrp = batchJobGrp.Name;
                     jobCount++;
+                    CurrentJobPosition = jobCount;
                     if (batchJobGrp.Verification == 1) {
                         StopForJobVerification(batchJobGrp.Name);
                     }
