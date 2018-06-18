@@ -22,7 +22,7 @@ namespace Scriptovich {
                 Rwl.AcquireWriterLock(1000);
                 try {
                     string border = "------------------------------------------------------------";
-                    string timestamp = DateTime.Now.AddMinutes(55).ToString("dd'-'MM'-'yyyy HH:mm:ss");
+                    string timestamp = DateTime.Now.ToString("dd'-'MM'-'yyyy HH:mm:ss");
                     if (level == 1) {
                         File.AppendAllText(FileName, Environment.NewLine + border);
                         File.AppendAllText(FileName, Environment.NewLine + "[" + timestamp + "]" + "\t" + message);
