@@ -15,11 +15,69 @@ namespace Scriptovich {
             return File.ReadAllLines(pathFile).ToList();
         }
 
-        static void StopForJobVerification(string batchJobGrp) {
-            Console.WriteLine("------------------------------------------------------------");
-            Console.WriteLine("Execution stopped, because next BJG [" + batchJobGrp + "] was marked as [needs verification]");
+        static bool FileEquals(string path1, string path2) {
+            byte[] file1 = File.ReadAllBytes(path1);
+            byte[] file2 = File.ReadAllBytes(path2);
+            if (file1.Length == file2.Length) {
+                for (int i = 0; i < file1.Length; i++) {
+                    if (file1[i] != file2[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+    static List<string> FindBJGToStartWith(List<string> batchJobGrps) {
+            Console.WriteLine("If you want to start execution from the beginning of BJG list - press [1]");
+            Console.WriteLine("Otherwise please type the line number of BJG from which you want to start (use order from file BJG_to_run.txt)");
+            int batchJobGrpLine = 0;
+            while (true) {
+                string userInput = Console.ReadLine();
+                try {
+                    batchJobGrpLine = int.Parse(userInput);
+                    if (batchJobGrpLine > batchJobGrps.Count || batchJobGrpLine < 1) {
+                        Console.WriteLine("There are only " + batchJobGrps.Count + " BJGs to run. Please type number from 1 to " + batchJobGrps.Count);
+                        continue;
+                    } else {
+                        break;
+                    }
+                } catch (Exception) {
+                    Console.WriteLine("Oops, you've typed something wrong.");
+                    Console.WriteLine("If you want to start execution from the beginning of BJG list - press [1]");
+                    Console.WriteLine("Otherwise please type the line number of BJG from which you want to start (use order from file BJG_to_run.txt)");
+                }
+            }
+            if (batchJobGrpLine == 1) {
+                Console.WriteLine();
+                Console.WriteLine("OK, Starting from the beginning...");
+                Log.Write(1, "User decided to start execution from the beginning");
+                return batchJobGrps;
+            } else {
+                Console.WriteLine("On line " + batchJobGrpLine + " is BJG [" + batchJobGrps[batchJobGrpLine-1] + "]");
+                Console.WriteLine("If you want to continue press [1]");
+                while (true) {
+                    string userInput = Console.ReadLine();
+                    if (userInput == "1") {
+                        Console.WriteLine();
+                        Console.WriteLine("OK, starting from line " + batchJobGrpLine + ", BJG [" + batchJobGrps[batchJobGrpLine-1]+ "]...");
+                        Console.WriteLine();
+                        break;
+                    } else {
+                        Console.WriteLine("Oops, you've typed something wrong.");
+                        Console.WriteLine("If you want to continue execution, please press [1]");
+                    }
+                }
+                Log.Write(1, "User decided to start from line " + batchJobGrpLine + ", BJG [" + batchJobGrps[batchJobGrpLine-1] + "]");            
+                return batchJobGrps.GetRange(batchJobGrpLine-1, batchJobGrps.Count- (batchJobGrpLine-1));
+            }
+        }
+
+        static void WaitForManualCorrection() {
+            Console.WriteLine("Manual correction is needed");
+            Log.Write(2, "Manual correction is needed");
             Console.WriteLine("Please press [1] when BJG ready and execution will be continued");
-            Log.Write(2, "Execution stopped for BJG verification");
             while (true) {
                 string userInput = Console.ReadLine();
                 if (userInput == "1") {
@@ -34,9 +92,42 @@ namespace Scriptovich {
             }
         }
 
-        static void SavePreviouslyEndedBJGInfo(object sender, ConsoleCancelEventArgs e) {
-            string cacheFile = Directory.GetCurrentDirectory() + @"\Scriptovich_cache.txt";
-            File.WriteAllText(cacheFile, CurrentBatchJobGrp + ";" + CurrentJobPosition);
+        static void StopForJobVerification(BatchJobGrp batchJobGrp) {
+            Console.WriteLine("------------------------------------------------------------");
+            Console.WriteLine("Execution stopped, because next BJG [" + batchJobGrp.Name + "] was marked as [needs verification]");      
+            Log.Write(2, "Execution stopped for BJG verification");
+            string pathMasterImpFile = batchJobGrp.OutFilePath;
+            string pathTestImpFile = batchJobGrp.OutFilePath.Replace('2', '5').Replace('7', '8');
+            int pathError = 0;
+
+            if (!File.Exists(pathMasterImpFile)) {
+                Console.WriteLine("Cannot find Master import file");
+                Log.Write(2, "Master import file was not found");
+                pathError = 1;
+            }
+            if (!File.Exists(pathTestImpFile)) {
+                Console.WriteLine("Cannot find Test import file");
+                Log.Write(2, "Test import file was not found");
+                pathError = 1;
+            }
+            if(pathError == 1) {
+                WaitForManualCorrection();
+            } else {
+                Console.WriteLine("Attempt to match files automatically...");
+                Log.Write(2, "Attempt to match import files automatically...");
+                if (FileEquals(pathMasterImpFile, pathTestImpFile)) {
+                    Console.WriteLine("  Files are equal");
+                    Log.Write(3, "Files are equal");
+                    Console.WriteLine();
+                    Console.WriteLine("OK, continue execution...");
+                    Log.Write(2, "Script returned to execution");
+                    return;
+                } else {
+                    Console.WriteLine("  Files are different");
+                    Log.Write(3, "Files are different");
+                    WaitForManualCorrection();
+                }
+            }       
         }
 
         static void VerifyServerListForWaiting(List<Server> serversToWait) {
@@ -60,7 +151,7 @@ namespace Scriptovich {
         }
 
         static void Main(string[] args) {
-            Console.CancelKeyPress += SavePreviouslyEndedBJGInfo;
+            ExitCodeDescription.InitializeExitCodesDict();
             string logFile = "";
             try {
                 string logDir = Directory.GetCurrentDirectory() + @"\Log";
@@ -80,15 +171,24 @@ namespace Scriptovich {
                 string pathBatchJobGrps = Directory.GetCurrentDirectory() + @"\BJG_to_run.txt";
                 char delimiter = ';';
                 try {
-                    foreach (string item in ReadFileWithBatchJobGrps(pathBatchJobGrps)) {
-                        string name = item.Split(delimiter)[0];
-                        int verification = int.Parse(item.Split(delimiter)[1]);
-                        BatchJobGrp batchJobGrp = new BatchJobGrp(name, verification);
+                    List<string> batchJobGrpFile = ReadFileWithBatchJobGrps(pathBatchJobGrps);
+                    List<string> batchJobGrpToRun = FindBJGToStartWith(batchJobGrpFile);
+
+                    foreach (string item in batchJobGrpToRun) {
+                        string name = item.Split(delimiter)[1];
+                        int verification = int.Parse(item.Split(delimiter)[2]);
+                        string outFilePath = item.Split(delimiter)[3];
+                        BatchJobGrp batchJobGrp = new BatchJobGrp(name, verification, outFilePath);
                         batchJobGrps.Add(batchJobGrp);
                     }
                 } catch (Exception) {
-                    Console.WriteLine("Input file: " + pathBatchJobGrps + "\nis missed or incorrect! Please check if the file exist and whether the file has only two columns separated by " + "[" + delimiter + "]");
-                    Console.WriteLine("Also put the BJG name in first column and in second the marker [1/0] (where to stop execution for verification)");
+                    Console.WriteLine("------------------------------------------------------------");
+                    Console.WriteLine("Input file: " + pathBatchJobGrps + "\nis missed or incorrect! Please check if the file exists and whether the file has four columns separated by " + "[" + delimiter + "]");
+                    Console.WriteLine("Example of input file:");
+                    Console.WriteLine("First column the is line number");
+                    Console.WriteLine("Second column is BJG name");
+                    Console.WriteLine("Third column is the marker [1/0] where to stop execution for BG verification");
+                    Console.WriteLine("Fourth column is path to import file from Master SCD (will be used for automatic match)");
                     Log.Write(2, "Input file: " + pathBatchJobGrps + " with BJGs is incorrect");
                 }
             } catch (Exception) {
@@ -105,18 +205,18 @@ namespace Scriptovich {
                 }
                 VerifyServerListForWaiting(serversToWait);
             }
-            
+
             //---------------------------------------------------------------------------------------------------------------------------------------------------------
 
             if (batchJobGrps.Count > 0 && !errors) {
                 Installation masterSCD = new Installation(Configs.PathMasterSCD, "Master", Configs.BatchQueue, Configs.BatchDate, Configs.BatchServer, serversToWait, Log);
                 Installation testSCD = new Installation(Configs.PathTestSCD, "Test", Configs.BatchQueue, Configs.BatchDate, Configs.BatchServer, serversToWait, Log);
+                Console.WriteLine("------------------------------------------------------------");
                 Console.WriteLine("Execution started");
-                Log.Write(1, "Execution started");
+                Log.Write(2, "Execution started");
                 Console.WriteLine("Do NOT close this window till the process will end");
                 Console.WriteLine("Please see log file for execution details:");
-                Console.WriteLine(Log.FileName);
-                Console.WriteLine("------------------------------------------------------------");
+                Console.WriteLine(Log.FileName);            
                 int jobCount = 0;
                 int allJobs = batchJobGrps.Count;
 
@@ -125,7 +225,7 @@ namespace Scriptovich {
                     jobCount++;
                     CurrentJobPosition = jobCount;
                     if (batchJobGrp.Verification == 1) {
-                        StopForJobVerification(batchJobGrp.Name);
+                        StopForJobVerification(batchJobGrp);
                     }
                     //Run Test
                     Log.Write(1, "Starting " + jobCount + " of " + allJobs + " in Test");

@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="BatchJobGrp.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="ExitCodeDescription.cs" />
     <Compile Include="Installation.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Program.cs" />

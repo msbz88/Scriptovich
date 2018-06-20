@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -34,10 +35,10 @@ namespace Scriptovich {
                     break;
                 } else {
                     Log.Write(2, "Waiting for " + ServerType + " server ["+ ServerName + "] in " + versionSCD + "...");
-                    Log.Write(3, "[Error Level " + serverStatus + "]");
+                    Log.Write(3, "[Exit Code: " + serverStatus + " Description: " + ExitCodeDescription.ServerExitCodeDescript(serverStatus) + "]");
                     Console.WriteLine();
                     Console.WriteLine("Waiting for " + ServerType + " server [" + ServerName + "] in " + versionSCD + "...");
-                    Console.WriteLine("[Error Level " + serverStatus + "]");
+                    Console.WriteLine("[Exit Code: " + serverStatus + " Description: " + ExitCodeDescription.ServerExitCodeDescript(serverStatus) + "]");
                     Thread.Sleep(30000);
                 }
             }

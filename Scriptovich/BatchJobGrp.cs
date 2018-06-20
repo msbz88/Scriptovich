@@ -14,10 +14,12 @@ namespace Scriptovich {
                 } else { verification = value; }
             }
         }
+        public string OutFilePath { get; set; } = "";
 
-        public BatchJobGrp(string name, int verification) {
+        public BatchJobGrp(string name, int verification, string outFilePath) {
             Name = name;
             Verification = verification;
+            OutFilePath = outFilePath;
         }
     }
 }
