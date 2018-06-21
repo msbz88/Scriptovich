@@ -10,6 +10,8 @@ namespace Scriptovich {
         static Log Log { get; set; }
         static string CurrentBatchJobGrp { get; set; }
         static int CurrentJobPosition { get; set; }
+        static int BatchJobGrpLine { get; set; } = 0;
+        static int AllJobs { get; set; }
 
         public static List<string> ReadFileWithBatchJobGrps(string pathFile) {
             return File.ReadAllLines(pathFile).ToList();
@@ -32,12 +34,12 @@ namespace Scriptovich {
     static List<string> FindBJGToStartWith(List<string> batchJobGrps) {
             Console.WriteLine("If you want to start execution from the beginning of BJG list - press [1]");
             Console.WriteLine("Otherwise please type the line number of BJG from which you want to start (use order from file BJG_to_run.txt)");
-            int batchJobGrpLine = 0;
+
             while (true) {
                 string userInput = Console.ReadLine();
                 try {
-                    batchJobGrpLine = int.Parse(userInput);
-                    if (batchJobGrpLine > batchJobGrps.Count || batchJobGrpLine < 1) {
+                    BatchJobGrpLine = int.Parse(userInput);
+                    if (BatchJobGrpLine > batchJobGrps.Count || BatchJobGrpLine < 1) {
                         Console.WriteLine("There are only " + batchJobGrps.Count + " BJGs to run. Please type number from 1 to " + batchJobGrps.Count);
                         continue;
                     } else {
@@ -49,19 +51,19 @@ namespace Scriptovich {
                     Console.WriteLine("Otherwise please type the line number of BJG from which you want to start (use order from file BJG_to_run.txt)");
                 }
             }
-            if (batchJobGrpLine == 1) {
+            if (BatchJobGrpLine == 1) {
                 Console.WriteLine();
                 Console.WriteLine("OK, Starting from the beginning...");
                 Log.Write(1, "User decided to start execution from the beginning");
                 return batchJobGrps;
             } else {
-                Console.WriteLine("On line " + batchJobGrpLine + " is BJG [" + batchJobGrps[batchJobGrpLine-1] + "]");
+                Console.WriteLine("On line " + BatchJobGrpLine + " is BJG [" + batchJobGrps[BatchJobGrpLine - 1] + "]");
                 Console.WriteLine("If you want to continue press [1]");
                 while (true) {
                     string userInput = Console.ReadLine();
                     if (userInput == "1") {
                         Console.WriteLine();
-                        Console.WriteLine("OK, starting from line " + batchJobGrpLine + ", BJG [" + batchJobGrps[batchJobGrpLine-1]+ "]...");
+                        Console.WriteLine("OK, starting from line " + BatchJobGrpLine + ", BJG [" + batchJobGrps[BatchJobGrpLine - 1]+ "]...");
                         Console.WriteLine();
                         break;
                     } else {
@@ -69,8 +71,8 @@ namespace Scriptovich {
                         Console.WriteLine("If you want to continue execution, please press [1]");
                     }
                 }
-                Log.Write(1, "User decided to start from line " + batchJobGrpLine + ", BJG [" + batchJobGrps[batchJobGrpLine-1] + "]");            
-                return batchJobGrps.GetRange(batchJobGrpLine-1, batchJobGrps.Count- (batchJobGrpLine-1));
+                Log.Write(1, "User decided to start from line " + BatchJobGrpLine + ", BJG [" + batchJobGrps[BatchJobGrpLine - 1] + "]");            
+                return batchJobGrps.GetRange(BatchJobGrpLine - 1, batchJobGrps.Count- (BatchJobGrpLine - 1));
             }
         }
 
@@ -97,7 +99,7 @@ namespace Scriptovich {
             Console.WriteLine("Execution stopped, because next BJG [" + batchJobGrp.Name + "] was marked as [needs verification]");      
             Log.Write(2, "Execution stopped for BJG verification");
             string pathMasterImpFile = batchJobGrp.OutFilePath;
-            string pathTestImpFile = batchJobGrp.OutFilePath.Replace('2', '5').Replace('7', '8');
+            string pathTestImpFile = batchJobGrp.OutFilePath.Replace("apsam27", "apsam58").Replace("UAT7", "UAT8");
             int pathError = 0;
 
             if (!File.Exists(pathMasterImpFile)) {
@@ -172,6 +174,7 @@ namespace Scriptovich {
                 char delimiter = ';';
                 try {
                     List<string> batchJobGrpFile = ReadFileWithBatchJobGrps(pathBatchJobGrps);
+                    AllJobs = batchJobGrpFile.Count;
                     List<string> batchJobGrpToRun = FindBJGToStartWith(batchJobGrpFile);
 
                     foreach (string item in batchJobGrpToRun) {
@@ -217,33 +220,31 @@ namespace Scriptovich {
                 Console.WriteLine("Do NOT close this window till the process will end");
                 Console.WriteLine("Please see log file for execution details:");
                 Console.WriteLine(Log.FileName);            
-                int jobCount = 0;
-                int allJobs = batchJobGrps.Count;
 
                 foreach (BatchJobGrp batchJobGrp in batchJobGrps) {
-                    CurrentBatchJobGrp = batchJobGrp.Name;
-                    jobCount++;
-                    CurrentJobPosition = jobCount;
+                    CurrentBatchJobGrp = batchJobGrp.Name;              
+                    CurrentJobPosition = BatchJobGrpLine;
                     if (batchJobGrp.Verification == 1) {
                         StopForJobVerification(batchJobGrp);
                     }
                     //Run Test
-                    Log.Write(1, "Starting " + jobCount + " of " + allJobs + " in Test");
+                    Log.Write(1, "Starting " + BatchJobGrpLine + " of " + AllJobs + " in Test");
                     Console.WriteLine();
-                    Console.WriteLine("Starting " + jobCount + " of " + allJobs + " in Test");
+                    Console.WriteLine("Starting " + BatchJobGrpLine + " of " + AllJobs + " in Test");
                     Task runTest = new Task(() => testSCD.RunBatchJobGrpTask(batchJobGrp.Name));
                     runTest.Start();
                     //Run Master
-                    Log.Write(2, "Starting " + jobCount + " of " + allJobs + " in Master");
-                    Console.WriteLine("Starting " + jobCount + " of " + allJobs + " in Master");
+                    Log.Write(2, "Starting " + BatchJobGrpLine + " of " + AllJobs + " in Master");
+                    Console.WriteLine("Starting " + BatchJobGrpLine + " of " + AllJobs + " in Master");
                     Task runMaster = new Task(() => masterSCD.RunBatchJobGrpTask(batchJobGrp.Name));
                     runMaster.Start();
 
                     Task.WaitAll(runTest, runMaster);
                     //check Test result
-                    testSCD.CheckBatchJobGrpStatus(batchJobGrp.Name, jobCount, allJobs);
+                    testSCD.CheckBatchJobGrpStatus(batchJobGrp.Name, BatchJobGrpLine, AllJobs);
                     //check Master result
-                    masterSCD.CheckBatchJobGrpStatus(batchJobGrp.Name, jobCount, allJobs);
+                    masterSCD.CheckBatchJobGrpStatus(batchJobGrp.Name, BatchJobGrpLine, AllJobs);
+                    BatchJobGrpLine++;
                 }
             }
             Log.Write(1, "Script ended");
