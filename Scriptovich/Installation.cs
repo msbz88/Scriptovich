@@ -89,5 +89,4 @@ namespace Scriptovich {
             BatchJobGrpStatus = ExecuteBatchJobGrp(batchJobGrp);
         }
     }
-
 }
