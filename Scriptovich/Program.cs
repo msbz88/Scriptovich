@@ -40,7 +40,7 @@ namespace Scriptovich {
             if (isFileCheckNeeded) {
                 Console.WriteLine();
                 Console.WriteLine("Choose the comparison option for provided import files:");
-                Console.WriteLine("  1.Light compare (files will be compared by rows count)");
+                Console.WriteLine("  1.Basic compare (files will be compared by rows count)");
                 Console.WriteLine("  2.Full compare (byte to byte comparison)");
                 while (true) {
                     string userInput = Console.ReadLine();
@@ -50,7 +50,7 @@ namespace Scriptovich {
                             throw new Exception();
                         }
                         string CompareOptionNameForLog = "";
-                        if (CompareOption == 1) { CompareOptionNameForLog = "[Light compare]"; }
+                        if (CompareOption == 1) { CompareOptionNameForLog = "[Basic compare]"; }
                         else if (CompareOption == 2) { CompareOptionNameForLog = "[Full compare]"; }
                         Log.Write(2, "User select " + CompareOptionNameForLog + " option for provided import files");
                         break;
@@ -112,6 +112,7 @@ namespace Scriptovich {
         }
 
         static void WaitForManualCorrection() {
+            Console.WriteLine();
             Console.WriteLine("Manual correction is needed");
             Log.Write(2, "Manual correction is needed");
             Console.WriteLine("Please press [1] when BJG ready and execution will be continued");
@@ -133,22 +134,25 @@ namespace Scriptovich {
             Console.WriteLine("------------------------------------------------------------");
             Console.WriteLine("Execution stopped");
             Console.WriteLine("Next BJG [" + batchJobGrp.Name + "] was marked as [needs verification]");
-            Log.Write(2, "Execution stopped for BJG verification");
+            Log.Write(1, "Execution stopped for BJG verification");
+            Log.Write(2, "Next BJG [" + batchJobGrp.Name + "] was marked as [needs verification]");
             string pathMasterImpFile = batchJobGrp.OutFilePath;
             string pathTestImpFile = batchJobGrp.OutFilePath.Replace("apsam27", "apsam58").Replace("UAT7", "UAT8");
-            int pathError = 0;
+            bool pathError = false;
 
             if (!File.Exists(pathMasterImpFile)) {
-                Console.WriteLine("Cannot find Master import file");
+                Console.WriteLine();
+                Console.WriteLine("Cannot find Master import file for automatic comparison");
                 Log.Write(2, "Master import file was not found");
-                pathError = 1;
+                pathError = true;
             }
             if (!File.Exists(pathTestImpFile)) {
-                Console.WriteLine("Cannot find Test import file");
+                Console.WriteLine();
+                Console.WriteLine("Cannot find Test import file for automatic comparison");
                 Log.Write(2, "Test import file was not found");
-                pathError = 1;
+                pathError = true;
             }
-            if (pathError == 1) {
+            if (pathError) {
                 WaitForManualCorrection();
             } else {
                 Console.WriteLine("Attempt to match files automatically...");
@@ -225,11 +229,12 @@ namespace Scriptovich {
                     Console.WriteLine("------------------------------------------------------------");
                     Console.WriteLine("Input file: " + pathBatchJobGrps + "\nis missed or incorrect! Please check if the file exists and whether the file has four columns separated by " + "[" + delimiter + "]");
                     Console.WriteLine("Example of input file:");
-                    Console.WriteLine("First column the is line number");
+                    Console.WriteLine("First column is the line number");
                     Console.WriteLine("Second column is BJG name");
-                    Console.WriteLine("Third column is the marker [1/0] where to stop execution for BG verification");
-                    Console.WriteLine("Fourth column is path to import file from Master SCD (will be used for automatic match)");
+                    Console.WriteLine("Third column is the marker [1/0] where to stop execution for BJG verification");
+                    Console.WriteLine("Fourth column is path to import file from Master SCD (will be used for automatic check)");
                     Log.Write(2, "Input file: " + pathBatchJobGrps + " with BJGs is incorrect");
+                    errors = true;
                 }
             } catch (Exception) {
                 Console.WriteLine("The configuration file: " + pathConfigs + "\nis missed or not properly set!");
