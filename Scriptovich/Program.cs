@@ -137,7 +137,7 @@ namespace Scriptovich {
             Log.Write(1, "Execution stopped for BJG verification");
             Log.Write(2, "Next BJG [" + batchJobGrp.Name + "] was marked as [needs verification]");
             string pathMasterImpFile = batchJobGrp.OutFilePath;
-            string pathTestImpFile = batchJobGrp.OutFilePath.Replace("apsam27", "apsam58").Replace("UAT7", "UAT8");
+            string pathTestImpFile = batchJobGrp.OutFilePath.Replace("apsam26", "apsam58").Replace("UAT7", "UAT8");
             bool pathError = false;
 
             if (!File.Exists(pathMasterImpFile)) {
@@ -256,8 +256,11 @@ namespace Scriptovich {
                 Installation masterSCD = new Installation(Configs.PathMasterSCD, "Master", Configs.BatchQueue, Configs.BatchDate, Configs.BatchServer, serversToWait, Log);
                 Installation testSCD = new Installation(Configs.PathTestSCD, "Test", Configs.BatchQueue, Configs.BatchDate, Configs.BatchServer, serversToWait, Log);
                 Console.WriteLine("------------------------------------------------------------");
-                Console.WriteLine("Execution started");
-                Log.Write(2, "Execution started");
+                Console.WriteLine("Execution started");            
+                Console.WriteLine("The batch date = " + Configs.BatchDate);
+                Console.WriteLine();
+                Log.Write(2, "Execution started");                         
+                Log.Write(2, "The batch date = " + Configs.BatchDate);
                 Console.WriteLine("Do NOT close this window till the process will end");
                 Console.WriteLine("Please see log file for execution details:");
                 Console.WriteLine(Log.FileName);

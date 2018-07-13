@@ -13,6 +13,7 @@ namespace Scriptovich {
         public int BatchJobGrpStatus { get; set; }
         public Log Log { get; set; }
         private bool IsSkipMisc { get; set; } = false;
+        public string ExecutionTime { get; set; }
 
         public Installation(string pathSCD, string versionSCD, string batchQueue, string batchDate, string batchServer, List<Server> serversToWait, Log log) {
             PathSCD = pathSCD;
@@ -25,6 +26,7 @@ namespace Scriptovich {
         }
 
         public int ExecuteBatchJobGrp(string batchJobGrp) {
+            DateTime startTs = DateTime.Now;
             Process process = new Process();
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -33,6 +35,8 @@ namespace Scriptovich {
             process.StartInfo = startInfo;
             process.Start();
             process.WaitForExit();
+            TimeSpan endTs = DateTime.Now.Subtract(startTs);
+            ExecutionTime = endTs.ToString(@"dd\.hh\:mm\:ss");
             return process.ExitCode;
         }
 
@@ -66,9 +70,12 @@ namespace Scriptovich {
                         break;
                     }
 
-                } else {
+                } else {                 
                     Log.Write(4, batchJobGrp + " successfully executed in " + VersionSCD);
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine(" +" + batchJobGrp + " successfully executed in " + VersionSCD);
+                    Console.ResetColor();
+                    Console.WriteLine("  " + VersionSCD + " elapsed time [" + ExecutionTime + "]");                   
                     break;
                 }
             }
@@ -79,7 +86,9 @@ namespace Scriptovich {
             int menuItemsCount = 2;
             Log.Write(5, batchJobGrp + " was Failed in " + VersionSCD);
             Console.WriteLine("------------------------------------------------------------");
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(" -" + batchJobGrp + " was Failed in " + VersionSCD);
+            Console.ResetColor();
             Console.WriteLine();
             Console.WriteLine("Please select next action (index number):");
             Console.WriteLine("  1.Restart " + batchJobGrp + " in " + VersionSCD);
