@@ -72,10 +72,9 @@ namespace Scriptovich {
 
                 } else {                 
                     Log.Write(4, batchJobGrp + " successfully executed in " + VersionSCD);
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine(" +" + batchJobGrp + " successfully executed in " + VersionSCD);
-                    Console.ResetColor();
-                    Console.WriteLine("  " + VersionSCD + " elapsed time [" + ExecutionTime + "]");                   
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.WriteLine(" +" + batchJobGrp + " successfully executed in " + VersionSCD + " [" + ExecutionTime + "]");
+                    Console.ResetColor();              
                     break;
                 }
             }

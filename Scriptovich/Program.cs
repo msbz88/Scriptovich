@@ -35,6 +35,11 @@ namespace Scriptovich {
             return false;
         }
 
+        static string ConvertFromUnixTimestamp(double timestamp) {
+            TimeSpan timespan = TimeSpan.FromMinutes(timestamp);
+            return timespan.ToString(@"hh\:mm\:ss");
+        }
+
         static void HandleComparisonOptions(List<BatchJobGrp> batchJobGrps) {
             bool isFileCheckNeeded = batchJobGrps.Any(b => b.OutFilePath != "");
             if (isFileCheckNeeded) {
@@ -265,12 +270,21 @@ namespace Scriptovich {
                 Console.WriteLine("Please see log file for execution details:");
                 Console.WriteLine(Log.FileName);
 
+                DateTime globalStartTime = DateTime.Now;
+                DateTime elapsedTime = globalStartTime;
+                TimeSpan timeFromStart = new TimeSpan();
+                int completedBJG = 0;
+
                 foreach (BatchJobGrp batchJobGrp in batchJobGrps) {
                     CurrentBatchJobGrp = batchJobGrp.Name;
                     CurrentJobPosition = BatchJobGrpLine;
+
                     if (batchJobGrp.Verification == 1) {
                         StopForJobVerification(batchJobGrp);
                     }
+
+                    DateTime jobStartTime = DateTime.Now;
+
                     //Run Test
                     Log.Write(1, "Starting " + BatchJobGrpLine + " of " + AllJobs + " in Test");
                     Console.WriteLine();
@@ -285,10 +299,26 @@ namespace Scriptovich {
 
                     Task.WaitAll(runTest, runMaster);
 
+                    completedBJG++;
+                    TimeSpan jobEndTime = DateTime.Now.Subtract(jobStartTime);
+                    elapsedTime += jobEndTime;
+                    timeFromStart = elapsedTime.Subtract(globalStartTime);
+
                     //check Test result
                     testSCD.CheckBatchJobGrpStatus(batchJobGrp.Name, BatchJobGrpLine, AllJobs);
                     //check Master result
-                    masterSCD.CheckBatchJobGrpStatus(batchJobGrp.Name, BatchJobGrpLine, AllJobs);
+                    masterSCD.CheckBatchJobGrpStatus(batchJobGrp.Name, BatchJobGrpLine, AllJobs);                   
+                  
+                    double avgForOne = timeFromStart.TotalMinutes / completedBJG;
+                    double estForAll = avgForOne * (AllJobs - BatchJobGrpLine);
+                    string estEnd = DateTime.Now.AddMinutes(estForAll).ToString("dd'-'MM'-'yyyy HH:mm:ss");
+
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine();
+                    Console.WriteLine("  Avg. time for 1 BJG: [" + ConvertFromUnixTimestamp(avgForOne) + "]");
+                    Console.WriteLine("  Est. remaining time: [" + ConvertFromUnixTimestamp(estForAll) + "]; Est.ends: [" + estEnd + "]");
+                    Console.ResetColor();
+
                     //wait for STP to start due to polling 1 min
                     if (batchJobGrp.Name.Contains("STP")) {
                         Thread.Sleep(70000);
