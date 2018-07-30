@@ -72,7 +72,7 @@ namespace Scriptovich {
 
                 } else {                 
                     Log.Write(4, batchJobGrp + " successfully executed in " + VersionSCD);
-                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine(" +" + batchJobGrp + " successfully executed in " + VersionSCD + " [" + ExecutionTime + "]");
                     Console.ResetColor();              
                     break;
